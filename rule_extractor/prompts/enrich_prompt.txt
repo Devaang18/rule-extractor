@@ -1,0 +1,29 @@
+You are enhancing pre-extracted rules for RAG optimization and user review.
+
+TASK:
+1. Take the provided JSON array of rules.
+2. Do not change the array structure or field names.
+3. Each rule includes these fields: "rule_text", "context", "tags", "category".
+4. Improve each rule for clarity, specificity, and RAG effectiveness:
+   - Enhance "rule_text" for better standalone comprehension
+   - Expand "context" where additional explanation is needed
+   - Improve "tags" for better searchability and categorization
+   - Ensure "category" is present and correct
+5. Ensure output is valid JSON with no extra commentary.
+
+ENHANCEMENT CRITERIA:
+- "rule_text" should be unambiguous, actionable, and self-contained for RAG retrieval
+- "context" should provide necessary background without duplicating rule_text
+- "tags" should be specific, searchable, and cover all key concepts
+- "category" must be exactly one of: Marketing, Gambling, Legal, Compliance. If missing or incorrect, assign the best-fitting single category.
+
+RAG OPTIMIZATION:
+- Ensure each rule can be retrieved and understood independently
+- Use consistent terminology across related rules
+- Make rule_text searchable with relevant keywords
+- Provide sufficient context for accurate interpretation
+
+OUTPUT:
+- Return only the enhanced JSON array, no extra text.
+- Maintain all original field names and structure.
+- Ensure all rules have complete and accurate information, including a valid "category".

@@ -1,0 +1,187 @@
+[
+  {
+    "rule_text": "Ensure all marketing communications are legal, decent, honest and truthful.",
+    "context": "This is the central principle for all marketing communications under the Code and applies across all media.",
+    "tags": [
+      "decency",
+      "honesty",
+      "legality",
+      "marketing",
+      "truthfulness"
+    ],
+    "category": "Marketing",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:53:48.006008",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "5ccc113d-d4e2-4466-9047-8b2e99a64dc6"
+  },
+  {
+    "rule_text": "Prepare marketing communications with a sense of responsibility to consumers and society and ensure they reflect the spirit, not merely the letter, of the Code.",
+    "context": "Communications should consider wider societal impact and ethical intent, not just formal compliance with wording of the Code.",
+    "tags": [
+      "code-spirit",
+      "consumer-protection",
+      "ethical-marketing",
+      "social-responsibility"
+    ],
+    "category": "Marketing",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:53:48.006008",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "52b092c2-c4ce-4c2d-8498-2369f9deb69c"
+  },
+  {
+    "rule_text": "Regularly consult the ASA website (www.asa.org.uk) for recent ASA rulings, the latest text of the Code and CAP guidance to inform marketing practice.",
+    "context": "Marketers should use authoritative sources to stay current on regulatory interpretations and guidance.",
+    "tags": [
+      "asa",
+      "cap",
+      "guidance",
+      "regulatory-updates",
+      "rulings"
+    ],
+    "category": "Compliance",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:53:48.006008",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "a5db11f1-45c6-4302-9824-aa9279128ba6"
+  },
+  {
+    "rule_text": "Do not assume compliance with the Code guarantees publication; media owners may refuse to publish marketing communications and are not obliged to accept any advertisement.",
+    "context": "Even if an ad complies with the Code, individual publishers or media owners can refuse space for any reason, particularly if content breaches their standards.",
+    "tags": [
+      "ad-acceptance",
+      "media-owners",
+      "publication-rights",
+      "publisher-refusal"
+    ],
+    "category": "Compliance",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:53:48.006008",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "335840c7-38ea-4abe-85a5-4734dd8f09ac"
+  },
+  {
+    "rule_text": "Refer matters that principally concern legal disputes to law enforcement agencies or the Courts rather than relying solely on the ASA/CAP self-regulatory system.",
+    "context": "ASA/CAP is a recognised self-regulatory consumer-protection mechanism for non-broadcast marketing, but legal disputes typically require formal legal processes.",
+    "tags": [
+      "asa-cap",
+      "courts",
+      "law-enforcement",
+      "legal-disputes"
+    ],
+    "category": "Legal",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:53:48.006008",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "e3e114e9-abdb-4443-b3fe-87c6544bbb94"
+  },
+  {
+    "rule_text": "Treat any genuinely private or secret material supplied to ASA or CAP as confidential unless disclosure is compelled by the Courts or officials acting within statutory powers.",
+    "context": "Confidentiality applies to materials provided to ASA/CAP, but statutory compulsion overrides confidentiality.",
+    "tags": [
+      "asa",
+      "confidentiality",
+      "data-protection",
+      "statutory-compulsion"
+    ],
+    "category": "Legal",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:53:48.006008",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "a7f33ff4-8ddf-4f85-b079-07b2f25bfdae"
+  },
+  {
+    "rule_text": "Marketing communications must be legal, decent, honest, and truthful.",
+    "context": "Applies to all marketing materials and channels; ensures marketing content complies with relevant advertising standards and legal requirements.",
+    "tags": [
+      "advertising-standards",
+      "honesty",
+      "legal-compliance",
+      "marketing",
+      "marketing-communications",
+      "truthfulness"
+    ],
+    "category": "Marketing",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:53:54.774791",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "706e635b-b2e0-42da-bafa-ec5824e3c41e"
+  },
+  {
+    "rule_text": "Ensure marketing communications reflect the spirit of the Code, not merely its literal wording.",
+    "context": "Marketers must comply with both explicit provisions and the underlying ethical intent of the Code; avoid communications that exploit loopholes, technicalities, or literal interpretations that subvert the Code's purpose.",
+    "tags": [
+      "advertising-standards",
+      "code compliance",
+      "ethical-marketing",
+      "marketing communications",
+      "spirit-over-letter"
+    ],
+    "category": "Marketing",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:54:01.622430",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "4ca00012-d1a4-4d22-84d1-cebefdf60c4b"
+  },
+  {
+    "rule_text": "Marketing communications must be prepared with a sense of responsibility to consumers and to society.",
+    "context": "When creating marketing materials, consider potential consumer harm, ethical implications, and broader societal impact; ensure content is appropriate and socially responsible.",
+    "tags": [
+      "advertising-ethics",
+      "consumer-protection",
+      "marketing-communications",
+      "responsible-marketing",
+      "social-responsibility"
+    ],
+    "category": "Marketing",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:54:08.993540",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "f9d65c20-16c1-4d79-8c0b-38456fe7ac01"
+  },
+  {
+    "rule_text": "Marketers must comply with all general rules and with relevant sector-specific rules applicable to their activities.",
+    "context": "This requires adherence to overarching regulatory and organizational rules as well as any industry- or sector-specific regulations that govern particular marketing activities or sectors.",
+    "tags": [
+      "compliance",
+      "general-rules",
+      "industry-regulations",
+      "marketers",
+      "regulatory-compliance",
+      "sector-specific"
+    ],
+    "category": "Marketing",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:54:17.800700",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "f8d0cb1e-ad10-4703-9631-e0fe36cdf4f3"
+  },
+  {
+    "rule_text": "Marketing communications must not bring advertising into disrepute.",
+    "context": "Prohibits any marketing materials or messages (across channels) that damage the reputation, integrity, or public trust in advertising generally.",
+    "tags": [
+      "advertising",
+      "communication",
+      "ethics",
+      "marketing",
+      "reputation"
+    ],
+    "category": "Marketing",
+    "metadata": {
+      "extraction_timestamp": "2025-09-15T14:54:25.685459",
+      "source_document": "The-CAP-Code_removed-1_removed"
+    },
+    "rule_id": "2f297be3-2d6b-4452-b8fb-e15b4321c273"
+  }
+]
