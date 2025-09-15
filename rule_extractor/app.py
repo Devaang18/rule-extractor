@@ -1,9 +1,10 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Request, APIRouter
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request, APIRouter, Form, BackgroundTasks
 from fastapi.responses import JSONResponse, Response
 import shutil
 import os
 import json
-from .main import main  # import your existing main rule extraction function
+import uuid
+# Lazy import to prevent startup crashes
 
 app = FastAPI()
 
@@ -36,8 +37,27 @@ v1 = APIRouter(prefix="/v1")
 async def root():
     return {"status": "ok", "message": "Rule Extractor API"}
 
+async def _post_webhook(webhook_url: str, body: str, job_id: str | None = None):
+    try:
+        import httpx
+        headers = {"Content-Type": "application/json", "X-Event": "rules.extracted.v1"}
+        if job_id:
+            headers["X-Job-Process-Id"] = job_id
+        # fire-and-forget with short timeout
+        with httpx.Client(timeout=15.0) as client:
+            client.post(webhook_url, data=body.encode("utf-8"), headers=headers)
+    except Exception as _:
+        # Intentionally swallow errors to avoid impacting API response
+        pass
+
+
 @v1.post("/extract")
-async def extract_rules_v1(request: Request, file: UploadFile = File(...)):
+async def extract_rules_v1(
+    request: Request,
+    file: UploadFile = File(...),
+    webhook_url: str | None = Form(default=None),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
     # Validate extension
     _, ext = os.path.splitext(file.filename)
     if ext.lower() not in ALLOWED_EXTENSIONS:
@@ -54,13 +74,39 @@ async def extract_rules_v1(request: Request, file: UploadFile = File(...)):
             os.remove(file_location)
             raise HTTPException(status_code=413, detail={"error": "file_too_large", "code": "payload_too_large"})
 
+        # If webhook_url provided, run asynchronously and return job_process_id immediately
+        if webhook_url:
+            job_id = str(uuid.uuid4())
+
+            async def _process_and_notify():
+                status_payload = {"job_process_id": job_id, "status": "failure", "error": "unknown"}
+                try:
+                    from .main import main
+                    main(file_location)
+                    output_file_inner = file_location.rsplit(".", 1)[0] + "_rules.json"
+                    if not os.path.exists(output_file_inner):
+                        status_payload = {"job_process_id": job_id, "status": "failure", "error": "output_not_found"}
+                    else:
+                        with open(output_file_inner, "r") as f:
+                            rules_inner = json.load(f)
+                        status_payload = {"job_process_id": job_id, "status": "success", "rules": rules_inner}
+                except Exception as e:  # noqa: BLE001
+                    status_payload = {"job_process_id": job_id, "status": "failure", "error": str(e)}
+                # Post to webhook
+                await _post_webhook(webhook_url, json.dumps(status_payload, ensure_ascii=False), job_id)
+
+            background_tasks.add_task(_process_and_notify)
+
+            return JSONResponse(status_code=202, content={"job_process_id": job_id})
+
+        # Otherwise, run synchronously and return rules directly
+        from .main import main
         main(file_location)
         output_file = file_location.rsplit(".", 1)[0] + "_rules.json"
         if not os.path.exists(output_file):
             return JSONResponse(status_code=500, content={"error": "output_not_found", "code": "internal_error"})
         with open(output_file, "r") as f:
             rules = json.load(f)
-        # Return just the array of rules (no outer object), pretty-printed
         body = json.dumps(rules, indent=2, ensure_ascii=False)
         return Response(content=body, media_type="application/json")
     except HTTPException:
