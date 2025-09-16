@@ -34,6 +34,9 @@ def main(file_path):
     with open(out_file, "w") as f:
         json.dump(all_rules, f, indent=2)
     print(f"Rule extraction completed. Output saved to {out_file}")
+    
+    # Return the JSON string for API use
+    return json.dumps(all_rules, indent=2)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

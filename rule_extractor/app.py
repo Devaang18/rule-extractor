@@ -1,122 +1,138 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Request, APIRouter, Form, BackgroundTasks
-from fastapi.responses import JSONResponse, Response
-import shutil
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, HttpUrl
 import os
 import json
 import uuid
-# Lazy import to prevent startup crashes
+import httpx
+import tempfile
 
-app = FastAPI()
+app = FastAPI(
+    title="Rule Extractor API",
+    description="API for extracting rules from PDF documents.",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
 
-UPLOAD_FOLDER = "./uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Simple configuration (can be moved to config/env as needed)
-ALLOWED_EXTENSIONS = {".pdf"}
+# Simple configuration
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "50"))
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
+class ExtractRequest(BaseModel):
+    file_url: HttpUrl
+    webhook_url: HttpUrl
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    from time import perf_counter
-    start = perf_counter()
-    try:
-        response = await call_next(request)
-        return response
-    finally:
-        duration_ms = (perf_counter() - start) * 1000
-        method = request.method
-        path = request.url.path
-        status = getattr(request.state, "_status", None) or (response.status_code if 'response' in locals() else '-')
-        print(f"{method} {path} -> {status} in {duration_ms:.1f}ms")
-
-
-v1 = APIRouter(prefix="/v1")
-
-@app.get("/")
+@app.get("/", response_class=JSONResponse)
 async def root():
-    return {"status": "ok", "message": "Rule Extractor API"}
+    return {"message": "Welcome to the Rule Extractor API. Visit /v1/health or /v1/extract."}
 
-async def _post_webhook(webhook_url: str, body: str, job_id: str | None = None):
-    try:
-        import httpx
-        headers = {"Content-Type": "application/json", "X-Event": "rules.extracted.v1"}
-        if job_id:
-            headers["X-Job-Process-Id"] = job_id
-        # fire-and-forget with short timeout
-        with httpx.Client(timeout=15.0) as client:
-            client.post(webhook_url, data=body.encode("utf-8"), headers=headers)
-    except Exception as _:
-        # Intentionally swallow errors to avoid impacting API response
-        pass
-
-
-@v1.post("/extract")
-async def extract_rules_v1(
-    request: Request,
-    file: UploadFile = File(...),
-    webhook_url: str | None = Form(default=None),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
-):
-    # Validate extension
-    _, ext = os.path.splitext(file.filename)
-    if ext.lower() not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail={"error": "unsupported_file_type", "code": "bad_request"})
-
-    file_location = os.path.join(UPLOAD_FOLDER, file.filename)
-    with open(file_location, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    try:
-        # Size check after write
-        size_mb = os.path.getsize(file_location) / (1024 * 1024)
-        if size_mb > MAX_FILE_SIZE_MB:
-            os.remove(file_location)
-            raise HTTPException(status_code=413, detail={"error": "file_too_large", "code": "payload_too_large"})
-
-        # If webhook_url provided, run asynchronously and return job_process_id immediately
-        if webhook_url:
-            job_id = str(uuid.uuid4())
-
-            async def _process_and_notify():
-                status_payload = {"job_process_id": job_id, "status": "failure", "error": "unknown"}
-                try:
-                    from .main import main
-                    main(file_location)
-                    output_file_inner = file_location.rsplit(".", 1)[0] + "_rules.json"
-                    if not os.path.exists(output_file_inner):
-                        status_payload = {"job_process_id": job_id, "status": "failure", "error": "output_not_found"}
-                    else:
-                        with open(output_file_inner, "r") as f:
-                            rules_inner = json.load(f)
-                        status_payload = {"job_process_id": job_id, "status": "success", "rules": rules_inner}
-                except Exception as e:  # noqa: BLE001
-                    status_payload = {"job_process_id": job_id, "status": "failure", "error": str(e)}
-                # Post to webhook
-                await _post_webhook(webhook_url, json.dumps(status_payload, ensure_ascii=False), job_id)
-
-            background_tasks.add_task(_process_and_notify)
-
-            return JSONResponse(status_code=202, content={"job_process_id": job_id})
-
-        # Otherwise, run synchronously and return rules directly
-        from .main import main
-        main(file_location)
-        output_file = file_location.rsplit(".", 1)[0] + "_rules.json"
-        if not os.path.exists(output_file):
-            return JSONResponse(status_code=500, content={"error": "output_not_found", "code": "internal_error"})
-        with open(output_file, "r") as f:
-            rules = json.load(f)
-        body = json.dumps(rules, indent=2, ensure_ascii=False)
-        return Response(content=body, media_type="application/json")
-    except HTTPException:
-        raise
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": "internal_error", "code": "internal_error", "message": str(e)})
-
-@v1.get("/health")
-async def health_v1():
+@app.get("/v1/health", response_class=JSONResponse)
+async def health_check():
     return {"status": "healthy"}
 
+async def _download_file_from_url(file_url: str) -> str:
+    """Download file from URL and return temporary file path"""
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        response = await client.get(file_url)
+        response.raise_for_status()
+        
+        # Check file size
+        content_length = response.headers.get('content-length')
+        if content_length and int(content_length) > MAX_FILE_SIZE_BYTES:
+            raise HTTPException(status_code=413, detail=f"File size exceeds the limit of {MAX_FILE_SIZE_MB}MB.")
+        
+        # Check content type (be more flexible for Google Drive)
+        content_type = response.headers.get('content-type', '').lower()
+        print(f"Downloaded file content-type: {content_type}")
+        
+        # Google Drive sometimes returns different content types, so let's be more flexible
+        if not any(x in content_type for x in ['pdf', 'application/octet-stream', 'binary/octet-stream']):
+            # Also check if the URL suggests it's a PDF
+            if not file_url.lower().endswith('.pdf') and 'drive.google' not in file_url.lower():
+                raise HTTPException(status_code=400, detail="Invalid file type. Only PDF files are allowed.")
+        
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file.write(response.content)
+        temp_file.close()
+        
+        return temp_file.name
 
-app.include_router(v1)
+async def _post_webhook(webhook_url: str, body: str, job_id: str = None, event_type: str = "rules.extracted.v1"):
+    try:
+        headers = {"Content-Type": "application/json", "X-Event": event_type}
+        if job_id:
+            headers["X-Job-Process-Id"] = job_id
+        print(f"Sending webhook to {webhook_url} with event {event_type} and job {job_id}")
+        
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(webhook_url, data=body.encode("utf-8"), headers=headers)
+            print(f"Webhook response: {response.status_code}")
+    except Exception as e:
+        print(f"Webhook error: {e}")
+
+
+@app.post("/v1/extract", response_class=JSONResponse)
+async def extract_rules_endpoint(
+    extract_request: ExtractRequest,
+    background_tasks: BackgroundTasks
+):
+    # Generate job ID immediately
+    job_id = str(uuid.uuid4())
+    
+    # Send immediate webhook notification (job received)
+    immediate_payload = {
+        "job_process_id": job_id,
+        "status": "processing",
+        "message": "Job received and processing started"
+    }
+    
+    # Send immediate webhook synchronously
+    await _post_webhook(
+        str(extract_request.webhook_url), 
+        json.dumps(immediate_payload, ensure_ascii=False), 
+        job_id,
+        event_type="rules.processing.v1"
+    )
+    
+    async def _process_and_notify():
+        status_payload = {"job_process_id": job_id, "status": "failure", "error": "unknown"}
+        temp_file_path = None
+        
+        try:
+            print(f"Starting background processing for job {job_id}")
+            
+            # Download file from URL
+            temp_file_path = await _download_file_from_url(str(extract_request.file_url))
+            print(f"File downloaded successfully: {temp_file_path}")
+            
+            # Process the file
+            from .main import main
+            print(f"Starting rule extraction for {temp_file_path}")
+            rules_json = main(temp_file_path)
+            rules = json.loads(rules_json)
+            status_payload = {"job_process_id": job_id, "status": "success", "rules": rules}
+            print(f"Rule extraction completed successfully for job {job_id}")
+            
+        except Exception as e:
+            print(f"Error in background processing for job {job_id}: {e}")
+            status_payload = {"job_process_id": job_id, "status": "failure", "error": str(e)}
+        
+        finally:
+            # Clean up temporary file
+            if temp_file_path and os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+                print(f"Cleaned up temporary file: {temp_file_path}")
+        
+        # Post completion webhook
+        event_type = "rules.extracted.v1" if status_payload["status"] == "success" else "rules.extraction.failed.v1"
+        print(f"Sending completion webhook for job {job_id} with status {status_payload['status']}")
+        await _post_webhook(str(extract_request.webhook_url), json.dumps(status_payload, ensure_ascii=False), job_id, event_type)
+        print(f"Completion webhook sent for job {job_id}")
+
+    # Start background processing
+    background_tasks.add_task(_process_and_notify)
+
+    # Return immediately with job ID
+    return JSONResponse(status_code=202, content={"job_process_id": job_id}, headers={"X-Job-Process-Id": job_id})
